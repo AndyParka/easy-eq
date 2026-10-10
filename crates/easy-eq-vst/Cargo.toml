@@ -1,0 +1,18 @@
+[package]
+name = "easy-eq-vst"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-2.0-or-later"
+description = "Easy EQ in-place stereo DSP adapter for Equalizer APO"
+
+[lib]
+name = "peace2_audio"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+easy-eq-core = { path = "../easy-eq-core" }
+easy-eq-bridge = { path = "../easy-eq-bridge" }
+
+[dev-dependencies]
+libloading = "0.7.4"
+

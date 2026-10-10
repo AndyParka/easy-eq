@@ -1,0 +1,15 @@
+{
+  "name": "easy-eq",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --experimental-strip-types --test --test-isolation=none tests/*.test.ts",
+    "tauri": "tauri",
+    "desktop": "tauri dev"
+  },
+  "dependencies": { "@tauri-apps/api": "2.12.1" },
+  "devDependencies": { "@tauri-apps/cli": "2.12.1", "typescript": "7.0.2", "vite": "8.3.3" }
+}

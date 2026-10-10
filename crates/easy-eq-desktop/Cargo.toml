@@ -1,0 +1,22 @@
+[package]
+name = "easy-eq-desktop"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-2.0-or-later"
+description = "Native Windows Easy EQ editor and background audio host"
+
+[[bin]]
+name = "easy-eq"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "0.36.2", default-features = false, features = ["default_fonts", "glow"] }
+easy-eq-core = { path = "../easy-eq-core" }
+easy-eq-devices = { path = "../easy-eq-devices" }
+easy-eq-bridge = { path = "../easy-eq-bridge" }
+serde_json = "1"
+tray-icon = "0.25.1"
+rfd = "0.16.0"
+auto-launch = "0.6.0"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+raw-window-handle = "0.6.2"

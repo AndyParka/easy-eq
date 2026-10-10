@@ -1,0 +1,14 @@
+[package]
+name = "easy-eq-bridge"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-2.0-or-later"
+description = "Bounded control transport for the Easy EQ native audio adapters"
+
+[dependencies]
+easy-eq-core = { path = "../easy-eq-core" }
+serde = { version = "1", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.56.0"
+

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+target/
+/src-tauri/gen/
+/.cache/
+/.tools/
+/upstream/
+/artifacts/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx

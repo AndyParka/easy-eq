@@ -1,0 +1,22 @@
+{
+  "retrieved": "2026-10-08",
+  "equalizerApo": {
+    "url": "https://git.code.sf.net/p/equalizerapo/code",
+    "branch": "main",
+    "commit": "bbfcc3e5024cbb9d61ba75fc88d78605cc4c9687",
+    "version": "1.4.2",
+    "path": "upstream/equalizer-apo",
+    "license": "GPL-2.0-or-later",
+    "shallowClone": true
+  },
+  "peace": {
+    "url": "https://sourceforge.net/projects/peace-equalizer-apo-extension/files/Source%20code/Source%20code.zip/download",
+    "archive": "upstream/peace-source.zip",
+    "sha256": "b2c2a5a179e65f9000250ed35552db2601cd5bf6fd1bd2f00ce5e36261d48b11",
+    "path": "upstream/peace",
+    "sourceVersion": "1.6.9.11",
+    "archiveDate": "2025-12-29",
+    "license": "GPLv2 per upstream project metadata",
+    "note": "The official source is an AutoIt archive, not a Git repository. This is the published source archive, not a claim of parity with every newer binary or data update."
+  }
+}
