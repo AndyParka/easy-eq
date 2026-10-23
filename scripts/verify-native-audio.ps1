@@ -46,7 +46,8 @@ $checkResults = Join-Path $projectRoot 'artifacts/native-audio-validation.txt'
 function Start-Preview([bool] $tray) {
     $script:auditRun++
     $parameters = @{FilePath=$executable; WindowStyle='Hidden'; PassThru=$true}
-    if ($tray) { $parameters.ArgumentList = @('--tray') }
+    $parameters.ArgumentList = @('--worker')
+    if ($tray) { $parameters.ArgumentList += '--tray' }
     $script:auditPreview = Start-Process @parameters
 }
 function Send-Command([string] $flag) {

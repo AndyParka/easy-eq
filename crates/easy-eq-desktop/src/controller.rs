@@ -46,10 +46,21 @@ fn persist(workspace:&Workspace)->Result<(),String> {
     fs::write(&temporary,serde_json::to_vec(workspace).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?;
     fs::rename(temporary,path).map_err(|e|e.to_string())
 }
+pub fn set_startup_preference(enabled:bool)->Result<(),String> {
+    let path=data_dir().join("workspace.json");
+    let mut workspace=if path.exists(){load_workspace(&fs::read_to_string(path).map_err(|e|e.to_string())?)?}else{initial()};
+    workspace.settings.start_at_login=enabled;
+    workspace.revision=workspace.revision.saturating_add(1);
+    persist(&workspace)
+}
 pub fn configure_startup(enabled:bool)->Result<(),String> {
     let executable=std::env::current_exe().map_err(|e|e.to_string())?;
-    let manager=auto_launch::AutoLaunch::new("Peace 2",&format!("\"{}\"",executable.display()),auto_launch::WindowsEnableMode::CurrentUser,&["--tray"]);
-    if enabled {manager.enable()} else {manager.disable()}.map_err(|e|e.to_string())
+    use std::os::windows::process::CommandExt;
+    let result=std::process::Command::new("powershell.exe")
+        .args(["-NoProfile","-NonInteractive","-Command",include_str!("../../../scripts/configure-startup.ps1")])
+        .env("PEACE2_EXECUTABLE",&executable).env("PEACE2_STARTUP",if enabled {"enable"}else{"disable"})
+        .creation_flags(0x08000000).output().map_err(|e|e.to_string())?;
+    if result.status.success(){Ok(())}else{Err(format!("Startup task configuration failed ({}): {} {}",result.status,String::from_utf8_lossy(&result.stdout).trim(),String::from_utf8_lossy(&result.stderr).trim()))}
 }
 impl Controller {
     pub fn start(ctx:eframe::egui::Context)->Self {
@@ -74,10 +85,22 @@ impl Controller {
                 }
             });
             let mut saving=false;let mut last_save=Instant::now();
+            let heartbeat=crate::supervisor::heartbeat().ok();
+            let resume=crate::supervisor::resume_event().ok();
+            let mut previous_tick=easy_eq_bridge::windows::now_ms();
             let read_only=snapshot.error.as_ref().is_some_and(|e|e.starts_with("Saved settings could not be read"));
             let mut startup=snapshot.workspace.settings.start_at_login;
             if let Err(e)=configure_startup(startup) {snapshot.error=Some(format!("Sign-in startup: {e}"));}
             loop {
+                let now=easy_eq_bridge::windows::now_ms();
+                let signalled=resume.as_ref().is_some_and(|e|e.drain());
+                if signalled || now.saturating_sub(previous_tick)>2_000 {
+                    host=Host::default();
+                    let _=discovery_request.send(());
+                    crate::log("Audio control resumed: reopened bridge mappings and requested fresh output discovery.");
+                }
+                previous_tick=now;
+                if let Some(event)=&heartbeat {event.signal();}
                 let mut changed=false;let mut quitting=false;
                 for command in receiver.try_iter() {
                     match command {

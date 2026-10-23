@@ -1,5 +1,17 @@
 # Easy EQ implementation decisions
 
+The 1.0 Windows release adds a separate watchdog without a renderer. It owns the
+editor child process, monitors an audio-control heartbeat, backs off crash loops,
+and restores the editor in the tray. Resume scheduling gaps grant a fresh
+heartbeat window and refresh device discovery and bridge mappings. Explicit Quit
+signals the watchdog before stopping the worker, preserving intentional exit.
+
+The per-user scheduled task starts at sign-in, unlock and wake, retries failed
+watchdogs, and has no battery, idle, network or execution-time restriction.
+Legacy profile, mapping, DLL and instance identifiers remain compatible with
+the original prototype. Audio remains in the APO callback; the watchdog does
+not buffer, capture or route playback.
+
 ## Scope and accepted preferences
 
 All three desktop platforms are designed in from the start. Core controls are

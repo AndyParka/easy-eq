@@ -20,6 +20,25 @@ extern "system" {
     fn CloseHandle(handle:*mut c_void)->i32;
 }
 fn wide(value:&str)->Vec<u16>{value.encode_utf16().chain(Some(0)).collect()}
+pub struct Event(*mut c_void);
+impl Event {
+    pub fn open(name:&str)->Result<Self,String> {
+        let handle=unsafe {CreateEventW(std::ptr::null_mut(),0,0,wide(name).as_ptr())};
+        if handle.is_null(){Err(std::io::Error::last_os_error().to_string())}else{Ok(Self(handle))}
+    }
+    pub fn signal(&self){unsafe{SetEvent(self.0);}}
+    pub fn drain(&self)->bool{unsafe{WaitForSingleObject(self.0,0)==0}}
+}
+impl Drop for Event {fn drop(&mut self){unsafe{CloseHandle(self.0);}}}
+pub struct NamedMutex {handle:*mut c_void,pub primary:bool}
+impl NamedMutex {
+    pub fn acquire(name:&str)->Result<Self,String>{unsafe{
+        let handle=CreateMutexW(std::ptr::null_mut(),0,wide(name).as_ptr());
+        let primary=GetLastError()!=183;
+        if handle.is_null(){Err(std::io::Error::last_os_error().to_string())}else{Ok(Self{handle,primary})}
+    }}
+}
+impl Drop for NamedMutex {fn drop(&mut self){unsafe{CloseHandle(self.handle);}}}
 pub struct Instance {mutex:*mut c_void,events:Vec<*mut c_void>,pub primary:bool}
 pub const COMMANDS:[&str;7]=["show","off","on","quit","close","controls","restore-controls"];
 impl Instance {

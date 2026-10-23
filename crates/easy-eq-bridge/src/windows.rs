@@ -110,6 +110,7 @@ impl Default for Host {
 }
 impl Host {
     pub fn update(&mut self, workspace: Option<&Workspace>, outputs: &[(String,String,Option<u16>)]) -> Vec<AudioStatus> {
+        if self.directory.is_none() { self.directory=config_directory().ok(); }
         let now = now_ms(); let mut statuses = Vec::new();
         for (id,state,channels) in outputs {
             let mut status = AudioStatus { output_id:id.clone(), state:"needsSetup".into(), reason:String::new(), sample_rate:None, added_buffer_frames:0 };

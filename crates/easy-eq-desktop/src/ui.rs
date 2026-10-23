@@ -101,7 +101,7 @@ impl Desktop {
         match action {
             0 => { self.hidden = false; ctx.send_viewport_cmd(ViewportCommand::Visible(true)); ctx.send_viewport_cmd(ViewportCommand::Focus); crate::log("Native editor reopened."); }
             1 | 2 => { let _ = self.controller.sender.send(Command::Enabled(action == 2)); }
-            3 => { self.visualiser.stop(); self.quitting = true; self.controller.stop(); ctx.send_viewport_cmd(ViewportCommand::Close); crate::log("Native Quit: audio lease revoked."); }
+            3 => { crate::supervisor::request_stop(); self.visualiser.stop(); self.quitting = true; self.controller.stop(); ctx.send_viewport_cmd(ViewportCommand::Close); crate::log("Native Quit: audio lease revoked."); }
             4 => { if self.tray.is_some() { self.hidden = true; ctx.send_viewport_cmd(ViewportCommand::Visible(false)); crate::log("Editor close intercepted; native host remains active. Editor visible: false"); } }
             #[cfg(debug_assertions)]
             5 => { if self.fixture_original.is_none() {

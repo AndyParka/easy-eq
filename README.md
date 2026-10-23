@@ -1,109 +1,82 @@
 # Easy EQ
 
-A focused headphone EQ with a native Rust egui/eframe editor. The Windows
-prototype has shared EQ followed by independent left/right bell and shelf filters, manual gain,
-stereo balance, profiles and an editable response graph. The app runs without
-a webview, Node process or development server.
+A simple Windows EQ frontend for Equalizer APO, with shared tuning and independent left/right correction. Built for balanced everyday headphone listening without an added audio processing buffer.
 
-## Run the Windows prototype
+![Easy EQ native editor](docs/images/easy-eq.png)
 
-~~~powershell
-./scripts/build-desktop.ps1
-./crates/easy-eq-desktop/target/debug/easy-eq.exe
-~~~
+## Why I built it
 
-Create or update your desktop shortcut to the executable above. Close the app
-from its tray menu before rebuilding.
+I wanted a simple, stable, easy-to-use EQ for Windows to balance my hearing loss. My ears need different adjustments at different frequencies; a single left/right volume slider cannot do that. I wanted games, music and everyday audio to stay responsive, with no added processing-buffer latency and the broadest practical compatibility.
 
-The editor follows the Windows default output. Profiles are remembered per
-output by default; Settings can switch to one shared profile. New outputs start
-flat. **Both ears** edits the shared first stage; **Left ear** and **Right ear**
-add individual correction afterward. Use **Add band**, then drag nodes or edit
-frequency, gain and Q. Left/right curves can be shown together, and edits can be
-linked or copied between ears. Shared and individual filters can total up to
-31 bands in each processing channel.
+The idea started with per-ear frequency balancing in September 2026. While using Peace with Equalizer APO, I found that stacked always-active profiles could make a supposedly neutral setup sound uneven. That experience shaped this project's priorities: visible controls, predictable profiles, independent ear adjustments, and an on/off state that stays as I left it.
 
-Controls apply automatically and are saved locally. Undo/redo covers profile
-edits. Import/export uses native file dialogs and the Easy EQ JSON format.
-Output gain is manual and common to both ears. Balance attenuates one side
-without mixing stereo channels. Beneath the EQ controls, **Original frequencies**
-and **New frequencies** display live left/right spectra measured before and after
-EQ, gain and balance. Both use the same logarithmic frequency axis and dBFS scale.
-Bypass shows the actual pass-through output. Comfort-tuning tools are deferred.
+The working prototype was called **Peace 2**. It became **Easy EQ** to give this independent project its own name. The editor was rebuilt in native Rust so normal use needs no browser, webview, Node process or development server.
 
-**Done / Close** hides the editor and keeps EQ running. **EQ off** bypasses
-processing. Tray **Quit** revokes the audio lease and exits; a killed or hung
-host expires its lease and fades to bypass. Sign-in startup opens in the tray
-and restores the intentional on/off state. Disable it in Settings.
+## Features
 
-## How Windows audio is processed
+- **Both ears, Left ear, Right ear:** shared EQ followed by separate correction for each ear.
+- **Editable graph:** drag nodes or enter frequency, gain and Q; bell and low/high-shelf filters.
+- **Manual gain and stereo balance:** attenuate one channel without mixing the stereo signals.
+- **Profiles per output:** follow the Windows default output and remember its profile, or use one shared profile. New outputs start flat.
+- **Linked or independent edits:** copy between ears, undo/redo and import/export JSON profiles.
+- **Live before/after spectra:** original/processed left/right traces from actual audio callbacks; capture pauses when hidden.
+- **Tray operation:** Close and Done hide the editor while EQ continues. Off bypasses; Quit stops both processes.
+- **Automatic recovery:** watchdog restores a crashed or stalled editor; sign-in, unlock and wake triggers preserve availability and the saved on/off state.
+- **Accurate status:** discovery, installed effects and acknowledged processing are reported separately.
 
-Easy EQ implements its own Rust DSP engine in crates/easy-eq-core. Equalizer APO
-provides the Windows system-audio insertion point and loads the component in
-crates/easy-eq-vst; crates/easy-eq-bridge transports prepared coefficients and the
-bypass lease. The editor does not stream or buffer playback audio. The component
-optionally copies short, paired input/output windows for the visualiser; FFT
-analysis runs in the editor. Capture stops when the editor is hidden and never
-delays playback. Updating the visualiser requires rebuilding the audio component
-and installing it with `scripts/install-audio.ps1` as well as rebuilding the
-editor. The installer uses versioned DLL paths so APO can reload an update without
-overwriting a loaded component or restarting the audio service.
+## Install
 
-The engine uses minimum-phase IIR filters on the current sample and adds no
-processing buffer. This does not remove operating-system, hardware or Bluetooth
-latency, nor frequency-dependent filter phase/group delay. Device latency has
-not yet been measured.
+1. Download the Windows x64 setup executable from [Releases](https://github.com/AndyParka/easy-eq/releases).
+2. Run setup normally. Audio setup requests administrator approval; the editor runs as your normal user.
+3. If Equalizer APO is missing, its bundled official installer opens. Select your playback output in Device Selector. A newly configured device may need a Windows restart.
+4. Play audio and check that Easy EQ reports active processing. Adjust **Both ears** for common tuning, then **Left ear** and **Right ear** for individual corrections.
 
-The component is installed on configured APO outputs on this machine. The UI
-reports actual callback acknowledgements separately from discovery/installation.
-Windows shared playback at 44.1 kHz on the stereo Steinberg UR22mkII has
-acknowledged profile edits and on/off changes from this native app.
+Setup installs the editor, audio bridge, recovery task, Start menu shortcuts and uninstaller. A desktop shortcut is optional. To retry audio setup or configure another output, run **Set up audio** from the Start menu. Errors are logged in `%LOCALAPPDATA%/Easy EQ/setup-audio.log`.
 
-Coverage depends on the device and playback path. ASIO and exclusive/raw modes
-can bypass APO. The Logitech headset's eight-channel shared format currently
-receives front L/R processing; complete correction through its surround renderer
-is unverified. Device registration, surround validation, reconnect stress and
-installer/upgrade packaging remain work.
+Existing APO configuration is backed up and preserved. Disable filters from another EQ to avoid stacking adjustments. Uninstall removes the managed include and startup task while retaining profiles and the separately installed Equalizer APO dependency. Existing Peace 2 profiles remain in `%APPDATA%/technology.parkinson.peace2` for compatibility.
+
+## Scope and compatibility
+
+The first release targets **Windows 10/11 on x64 PCs**, using Equalizer APO's shared-audio effects path. Easy EQ supplies its own Rust DSP component; Equalizer APO connects it to system playback. The original Peace app is not required.
+
+**No added processing buffer:** minimum-phase IIR filters process the current sample and the adapter reports zero added delay frames. This does not mean zero total latency. Windows, hardware, Bluetooth and filter phase/group delay still contribute their own behavior.
+
+Broad compatibility is the goal. ASIO, exclusive/raw playback, disabled enhancements and some spatial paths can bypass APO. Multichannel devices receive front L/R processing; full surround-renderer correction is unverified. Stereo shared playback has been validated on the development machine. See [validation](docs/validation.md) for evidence and remaining checks.
+
+This release is a manual listening EQ. Automated hearing tests, prescribed correction, comfort-tuning tools, macOS/Linux system-audio adapters, and complete ASIO/spatial integration are outside its current scope.
+
+## Background operation
+
+A small watchdog supervises the native tray/editor process. It has no GPU context and restores the editor after exit or a stalled audio-control heartbeat. An expired control lease fades to pass-through so a failed host does not mute Windows audio.
+
+Task Scheduler runs recovery in your signed-in session with no execution-time limit, battery restriction or idle requirement. It starts the app after sign-in, unlock or wake and retries a failed watchdog. The PC can sleep normally; processing resumes after wake.
+
+**Settings → Start in tray at Windows sign-in** controls recovery. Quit stops both processes until the next launch or recovery trigger. Logs rotate at approximately 2 MB in the profile directory.
 
 ## Build and verify
 
+Install Rust/MSVC, Visual Studio C++ Build Tools and Inno Setup 6 or 7:
+
 ~~~powershell
-./scripts/rust.ps1 test --manifest-path crates/easy-eq-desktop/Cargo.toml
-./scripts/rust.ps1 test --manifest-path crates/easy-eq-core/Cargo.toml
-./scripts/rust.ps1 build --manifest-path crates/easy-eq-bridge/Cargo.toml --bin inspect-control
-./scripts/rust.ps1 build --manifest-path crates/easy-eq-devices/Cargo.toml --bin exercise-output
-./scripts/verify-native-audio.ps1
+./scripts/build-installer.ps1
 ~~~
 
-The live harness uses silent shared playback, checks editor submissions and real
-callbacks, and restores the saved workspace. It covers window close, Off, Quit,
-tray startup, single-instance behavior and host kill. It does not establish
-audible behavior in every application or spatial mode.
+The build uses locked dependencies, statically links the MSVC CRT and verifies the bundled official Equalizer APO installer's SHA-256 and executable format. Output is in `artifacts/release`. The TypeScript/Tauri prototype remains as development history; the released application uses Rust.
 
-Windows builds require Windows build tools and a current Rust toolchain.
-The current editor build uses only Cargo. The earlier TypeScript/Tauri prototype
-remains under src, src-tauri and public for reference.
+~~~powershell
+./scripts/rust.ps1 test --manifest-path crates/easy-eq-core/Cargo.toml --locked
+./scripts/rust.ps1 test --manifest-path crates/easy-eq-bridge/Cargo.toml --locked
+./scripts/rust.ps1 test --manifest-path crates/easy-eq-devices/Cargo.toml --locked
+./scripts/rust.ps1 test --manifest-path crates/easy-eq-desktop/Cargo.toml --locked
+./scripts/build-audio.ps1
+./scripts/rust.ps1 test --manifest-path crates/easy-eq-vst/Cargo.toml --locked
+./scripts/verify-recovery.ps1
+~~~
 
-macOS/Linux remain later targets. The shared Rust DSP and profile format are
-portable; discovery adapters and a PipeWire export exist, but their complete
-system-audio paths require implementation and hardware tests.
+The live callback harness `scripts/verify-native-audio.ps1` also needs the bridge inspector and silent-playback helper built. It restores saved profiles afterward. Actual suspend/resume, audible A/B, driver-specific behavior and a clean-machine install require hardware/manual validation.
 
-## Sources and decisions
+## License and credits
 
-Official source snapshots are stored locally under upstream/equalizer-apo and
-upstream/peace, with versions/checksums in [docs/upstream.json](docs/upstream.json).
-They are ignored by source control. Their licenses and notices remain intact;
-new app source is GPL-2.0-or-later. See LICENSE, [decisions](docs/decisions.md),
-[architecture](docs/architecture.md) and [validation](docs/validation.md).
+GPL-2.0-or-later; see [LICENSE](LICENSE). Easy EQ is independent of Peace and Equalizer APO. Thanks to Jonas Thedering for Equalizer APO and Peter Verbeek for Peace, which inspired the initial exploration.
 
-## Rename compatibility
-
-Easy EQ was previously called Peace 2. Package and crate names, the desktop
-executable, editor branding and exported filenames now use Easy EQ. Existing
-profile JSON remains compatible. For existing installations, the application ID
-`technology.parkinson.peace2`, browser storage key `peace2-v1`, Windows startup
-registration, single-instance events, `Peace2` audio state/config directories,
-managed APO include marker and `peace2_audio` DLL identity intentionally remain
-stable. These are compatibility identifiers, not the product name. Rebuild the
-editor and update old shortcuts to `easy-eq.exe`. Historical validation notes
-refer to the original Peace 2 builds and are not evidence of a new Windows test.
+See [third-party notices](docs/THIRD-PARTY-NOTICES.md), [origin and scope](docs/origin-and-scope.md), [architecture](docs/architecture.md) and [decisions](docs/decisions.md). Matching Equalizer APO source accompanies releases that bundle its installer.

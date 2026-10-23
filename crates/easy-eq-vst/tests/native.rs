@@ -16,7 +16,8 @@ fn native_plugin_handles_in_place_buffers_per_ear_gain_off_and_expiry() {
     let dll_dir=root.join("dll").join(guid);std::fs::create_dir_all(&dll_dir).unwrap();
     let state_dir=root.join("Peace2").join(guid);std::fs::create_dir_all(&state_dir).unwrap();
     std::env::set_var("ProgramData",&root);
-    let source=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/debug/peace2_audio.dll");
+    let build=if cfg!(debug_assertions){"debug"}else{"release"};
+    let source=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target").join(build).join("peace2_audio.dll");
     let dll=dll_dir.join("peace2_audio.dll");std::fs::copy(source,&dll).unwrap();
     let control=state_dir.join("control.bin");Mapping::initialize(&control).unwrap();let mapping=Mapping::open(&control).unwrap();
     let spectrum_path=state_dir.join("spectrum.bin");SpectrumMapping::initialize(&spectrum_path).unwrap();let spectrum=SpectrumMapping::open(&spectrum_path).unwrap();

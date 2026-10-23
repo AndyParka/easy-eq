@@ -1,4 +1,8 @@
-param([switch] $Release, [switch] $Restore)
+param(
+    [switch] $Release, [switch] $Restore,
+    [string] $LibraryPath, [string] $InitializerPath,
+    [string] $UserSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $apo = Get-ItemProperty -LiteralPath 'HKLM:/SOFTWARE/EqualizerAPO'
@@ -11,7 +15,8 @@ $marker = '# Peace 2 audio bridge (managed)'
 function Write-AtomicText([string] $path, [string] $text) {
     $temporary = $path + '.peace2.tmp'
     [IO.File]::WriteAllText($temporary, $text, [Text.UTF8Encoding]::new($false))
-    [IO.File]::Move($temporary, $path, $true)
+    if ([IO.File]::Exists($path)) { [IO.File]::Replace($temporary, $path, [NullString]::Value) }
+    else { [IO.File]::Move($temporary, $path) }
 }
 if ($Restore) {
     $clean = [regex]::Replace($original, '(?m)^# Peace 2 audio bridge \(managed\)\r?\nInclude: Peace2\\config.txt\r?\n?', '')
@@ -20,8 +25,8 @@ if ($Restore) {
     exit 0
 }
 $build = if ($Release) { 'release' } else { 'debug' }
-$library = Join-Path $projectRoot "crates/easy-eq-vst/target/$build/peace2_audio.dll"
-$initializer = Join-Path $projectRoot 'crates/easy-eq-bridge/target/debug/init-control.exe'
+$library = if ($LibraryPath) { [IO.Path]::GetFullPath($LibraryPath) } else { Join-Path $projectRoot "crates/easy-eq-vst/target/$build/peace2_audio.dll" }
+$initializer = if ($InitializerPath) { [IO.Path]::GetFullPath($InitializerPath) } else { Join-Path $projectRoot 'crates/easy-eq-bridge/target/debug/init-control.exe' }
 if (!(Test-Path -LiteralPath $library) -or !(Test-Path -LiteralPath $initializer)) { throw 'Build the audio DLL and init-control helper before installation.' }
 $libraryHash = (Get-FileHash -LiteralPath $library -Algorithm SHA256).Hash
 $libraryName = 'peace2_audio_' + $libraryHash.Substring(0, 12).ToLowerInvariant() + '.dll'
@@ -39,7 +44,7 @@ $backup = Join-Path $ownedDirectory ('config.before-peace2-' + [DateTime]::UtcNo
 if (!$original.Contains($marker)) { [IO.File]::WriteAllText($backup, $original, [Text.UTF8Encoding]::new($false)) }
 $stateRoot = Join-Path $env:ProgramData 'Peace2'
 [IO.Directory]::CreateDirectory($stateRoot) | Out-Null
-$userSid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+$targetUserSid = [Security.Principal.SecurityIdentifier]::new($UserSid)
 $serviceSid = [Security.Principal.SecurityIdentifier]::new('S-1-5-19')
 $lines = [Collections.Generic.List[string]]::new()
 $lines.Add('# Easy EQ: final output stage only; L/R remain separate.')
@@ -59,13 +64,13 @@ foreach ($guid in $installed) {
     # Grant only this user and the Windows audio service write access. Control
     # files are outside APO's watched config tree to avoid configuration reloads.
     $acl = Get-Acl -LiteralPath $stateFile
-    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($userSid, 'Modify', 'Allow'))
+    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($targetUserSid, 'Modify', 'Allow'))
     $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($serviceSid, 'Modify', 'Allow'))
     Set-Acl -LiteralPath $stateFile -AclObject $acl
     $spectrumFile = Join-Path $stateFolder 'spectrum.bin'
     if (!(Test-Path -LiteralPath $spectrumFile)) { & $initializer --spectrum $spectrumFile; if ($LASTEXITCODE) { throw 'Could not initialize the spectrum mapping.' } }
     $spectrumAcl = Get-Acl -LiteralPath $spectrumFile
-    $spectrumAcl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($userSid, 'Modify', 'Allow'))
+    $spectrumAcl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($targetUserSid, 'Modify', 'Allow'))
     $spectrumAcl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($serviceSid, 'Modify', 'Allow'))
     Set-Acl -LiteralPath $spectrumFile -AclObject $spectrumAcl
     $lines.Add("Device: $guid")

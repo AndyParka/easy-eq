@@ -1,8 +1,35 @@
-# Validation snapshot — 9 October 2026
+# Easy EQ 1.0 release validation — 23 October 2026
+
+The packaged native application now includes a user-session watchdog and a
+Task Scheduler recovery task. The installed Windows x64 application passed:
+
+- Hidden startup and duplicate-launch handling with one supervised editor.
+- Forced editor termination followed by automatic tray recovery, retaining Off.
+- Resume notification reopening mappings and refreshing output discovery.
+- A six-second pause of both processes without an unnecessary watchdog restart.
+- A stalled editor heartbeat causing automatic replacement after 15 seconds.
+- Explicit Quit stopping both processes without a restart.
+- Windows PowerShell 5.1 audio setup, upgrading the configured outputs through
+  versioned DLL paths, with existing profiles preserved.
+- Real shared-playback callbacks acknowledging the installed release's graph
+  and enabled state at 48 kHz, with zero cross-channel mixing.
+
+The core, bridge, device and editor suites and compiled-plugin integration test
+cover 38 tests. The installer bundles the pinned official Equalizer APO 1.4.2
+installer, carries dependency notices, and statically links Easy EQ's MSVC CRT.
+Source archives and SHA-256 checksums accompany release binaries.
+
+The original sleep-related disappearance has no conclusive crash record. The
+checks above exercise recovery and simulated scheduling gaps; they do not
+establish actual hardware sleep/wake, clean-machine installation, audible A/B,
+full surround/spatial coverage or measured end-to-end latency. Those remain
+manual validation items. The installer is unsigned.
+
+## Prototype snapshot — 9 October 2026
 
 The current Windows prototype uses a native Rust/egui editor and an independent
 background audio host. The desktop shortcut targets the latest native executable
-at `crates/peace-desktop/target/debug/peace2.exe`. The former Tauri editor below is
+at `crates/easy-eq-desktop/target/debug/easy-eq.exe`. The former Tauri editor below is
 a historical snapshot.
 
 - 23 Rust core tests pass, including shared EQ followed by independent ear EQ,
